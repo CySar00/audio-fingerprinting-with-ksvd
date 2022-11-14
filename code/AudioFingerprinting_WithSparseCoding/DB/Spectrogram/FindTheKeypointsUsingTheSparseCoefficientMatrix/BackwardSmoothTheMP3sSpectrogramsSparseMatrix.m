@@ -1,0 +1,70 @@
+function dataTable2  = BackwardSmoothTheMP3sSpectrogramsSparseMatrix( SparseCoefficientMatrix, dataTable1, varargin)
+%
+%   Input:: 
+%       SparseCoefficientMatrix
+%       dataTable1
+%
+%       sigma 
+%       decayRate 
+%
+%   Output:: 
+%       dataTable2 
+
+    SparseCoefficientMatrix_Title = cell2mat(SparseCoefficientMatrix(1)); 
+    sparseCoefficientMatrix = cell2mat(SparseCoefficientMatrix(2)); 
+    
+    lengthOfVarargin=length(varargin); 
+    if lengthOfVarargin<1 
+        varargin{1}= 30;
+    end 
+    sigma = varargin{1}; 
+    
+    if lengthOfVarargin<2
+        varargin{2}= 0.9943; 
+    end 
+    decayRate = varargin{2};
+    
+    sparseCoefficientMatrix_Last = sparseCoefficientMatrix(:,end); 
+    maxSparseCoefficientMatrix_Last = max(sparseCoefficientMatrix_Last,[],2); 
+    
+    gaussianTable_Last = CreateTheGaussianTable(maxSparseCoefficientMatrix_Last,sigma); 
+    envelope_Last= max(gaussianTable_Last,[],2);
+    envelope_i = envelope_Last; 
+    if isempty(envelope_i)
+        envelope_i =zeros(size(SparseCoefficientMatrix_matrix,1),1); 
+    end 
+    
+    
+    numberOfInitialKeypoints = size(dataTable1,1); 
+    
+    numberOfKeypoints=0; 
+    for i= size(sparseCoefficientMatrix,2): (-1) : 1
+        sparseCoefficientMatrix_i = sparseCoefficientMatrix(:,i); 
+        
+        while numberOfInitialKeypoints>0 && dataTable1(numberOfInitialKeypoints,1)==i
+            p_k = dataTable1(numberOfInitialKeypoints,3); 
+            l_k = dataTable1(numberOfInitialKeypoints,2); 
+            
+            if p_k>envelope_i(l_k)
+                numberOfKeypoints = numberOfKeypoints+1; 
+                
+                localmax_i = zeros(size(envelope_i)); 
+                for f=1:length(localmax_i)
+                    localmax_i(f) = p_k*exp(-0.5*(( f-l_k)/sigma)^2); 
+                end 
+                envelope_i = max(localmax_i, envelope_i); 
+                
+                dataTable2(numberOfKeypoints,1)=i; 
+                dataTable2(numberOfKeypoints,2)=l_k; 
+            end 
+            
+            numberOfInitialKeypoints=numberOfInitialKeypoints-1;
+        end 
+        envelope_i =decayRate*envelope_i;
+    
+    end 
+    
+    
+    numberOfKeypoints
+    
+end 
